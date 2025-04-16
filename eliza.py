@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import os
+import time
 from colorama import init, Fore, Back, Style
 
 # Initialize colorama for cross-platform color support
@@ -23,6 +24,16 @@ def print_header():
     print(f"{Fore.WHITE}This implementation by Hackett Laboratories 2024.")
     print("\n")
 
+def get_user_text():
+    """Simulates user input with a mock response."""
+    time.sleep(2)  # Simulate thinking time
+    return "I've been feeling quite stressed lately."
+
+def get_eliza_text():
+    """Simulates Eliza's response with a mock reply."""
+    time.sleep(2)  # Simulate thinking time
+    return "Tell me more about these feelings of stress."
+
 def main():
     # Set up terminal
     clear_screen()
@@ -34,13 +45,15 @@ def main():
     
     while True:
         try:
-            # Get user input for Jamie's response
+            # Get simulated user input
             print(f"{Fore.WHITE}YOU  :", end=" ")
-            jamie_input = input()
+            user_response = get_user_text()
+            print(user_response)
             
-            # Get user input for ELIZA's response
+            # Get simulated ELIZA response
             print(f"{Fore.WHITE}ELIZA:", end=" ")
-            eliza_input = input()
+            eliza_response = get_eliza_text()
+            print(eliza_response)
         except KeyboardInterrupt:
             print("\nGoodbye!")
             break
