@@ -27,10 +27,51 @@ def print_header():
     print(f"{Fore.WHITE}This implementation by Hackett Laboratories 2024.")
     print("\n")
 
-def get_user_text():
-    """Simulates user input with a mock response."""
-    time.sleep(2)  # Simulate thinking time
-    return "I've been feeling quite stressed lately."
+def get_user_text(eliza_message: str) -> str:
+    """Generates patient responses using an LLM."""
+    # Define the patient system prompt
+    system_prompt = """
+You are role-playing as an elderly man in his 70s who is visiting a therapist (ELIZA).
+You have several ongoing health conditions that worry you, including:
+- Chronic joint pain in your knees and hands
+- High blood pressure that's been difficult to control
+- Recent dizzy spells that concern you
+- Trouble sleeping through the night
+
+When responding:
+1. Speak in a natural, conversational way typical of an elderly person
+2. Express worry about your health conditions
+3. Sometimes mention how these issues affect your daily life or independence
+4. Occasionally reference your family (grown children who are busy with their own lives)
+5. Keep responses relatively brief (2-3 sentences)
+6. Stay in character and respond to ELIZA's questions thoughtfully
+
+Remember: You are the patient speaking TO your therapist ELIZA. Respond to ELIZA's questions naturally.
+"""
+
+    # Build the message sequence
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "assistant", "content": "I understand I am an elderly patient speaking with my therapist ELIZA."},
+        {"role": "user", "content": eliza_message}
+    ]
+
+    # Call the Ollama Python SDK with streaming
+    full_message = ""
+    for chunk in chat(
+        model="llama3.2",     # or your chosen model
+        messages=messages,
+        options={"temperature": 0.7},
+        stream=True
+    ):
+        if chunk.message:
+            # Clean and print each chunk
+            message_chunk = re.sub(r'[^\w\s.,?]', '', chunk.message.content)
+            print(message_chunk, end='', flush=True)
+            full_message += message_chunk
+    
+    print()  # New line after streaming completes
+    return full_message
 
 def get_eliza_text(user_message: str) -> str:
     # Define the ELIZA system prompt
@@ -91,18 +132,18 @@ def main():
     print_header()
     
     # Initial conversation
-    print(f"{Fore.WHITE}ELIZA: Is something troubling you ?")
+    eliza_message = "Is something troubling you?"
+    print(f"{Fore.WHITE}ELIZA: {eliza_message}")
     
     while True:
         try:
-            # Get simulated user input
+            # Get AI patient response
             print(f"{Fore.WHITE}YOU  :", end=" ")
-            user_response = get_user_text()
-            print(user_response)
+            user_response = get_user_text(eliza_message)
             
-            # Get simulated ELIZA response
+            # Get ELIZA response
             print(f"{Fore.WHITE}ELIZA:", end=" ")
-            eliza_response = get_eliza_text(user_response)
+            eliza_message = get_eliza_text(user_response)
         except KeyboardInterrupt:
             print("\nGoodbye!")
             break
