@@ -5,6 +5,7 @@ import time
 from colorama import init, Fore, Back, Style
 from ollama import chat, ChatResponse
 import re
+import sys
 
 # Initialize colorama for cross-platform color support
 init()
@@ -66,18 +67,22 @@ Now continue the conversation as ELIZA.
         {"role": "user",   "content": user_message}
     ]
 
-    # Call the Ollama Python SDK
-    response: ChatResponse = chat(
+    # Call the Ollama Python SDK with streaming
+    full_message = ""
+    for chunk in chat(
         model="llama3.2",     # or your chosen model
         messages=messages,
-        options={"temperature": 0.5}
-    )
-
-    message = response.message.content
-    #clean up the message to remove all punctuation except for periods, commas, and question marks
-    message = re.sub(r'[^\w\s.,?]', '', message)
-
-    return message
+        options={"temperature": 0.5},
+        stream=True
+    ):
+        if chunk.message:
+            # Clean and print each chunk
+            message_chunk = re.sub(r'[^\w\s.,?]', '', chunk.message.content)
+            print(message_chunk, end='', flush=True)
+            full_message += message_chunk
+    
+    print()  # New line after streaming completes
+    return full_message
 
 def main():
     # Set up terminal
@@ -98,7 +103,6 @@ def main():
             # Get simulated ELIZA response
             print(f"{Fore.WHITE}ELIZA:", end=" ")
             eliza_response = get_eliza_text(user_response)
-            print(eliza_response)
         except KeyboardInterrupt:
             print("\nGoodbye!")
             break
