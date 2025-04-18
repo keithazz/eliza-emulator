@@ -6,6 +6,8 @@ from colorama import init, Fore, Back, Style
 from ollama import chat, ChatResponse
 import re
 import sys
+from collections import deque
+from typing import Tuple, Deque
 
 # Initialize colorama for cross-platform color support
 init()
@@ -27,8 +29,18 @@ def print_header():
     print(f"{Fore.WHITE}This implementation by Hackett Laboratories 2024.")
     print("\n")
 
-def get_user_text(eliza_message: str) -> str:
-    """Generates patient responses using an LLM."""
+def format_conversation_history(history: Deque[Tuple[str, str]]) -> str:
+    """Formats the conversation history into a string for context."""
+    if not history:
+        return ""
+    
+    context = "\nRecent conversation history:\n"
+    for role, message in history:
+        context += f"{role}: {message}\n"
+    return context
+
+def get_user_text(eliza_message: str, conversation_history: Deque[Tuple[str, str]]) -> str:
+    """Generates patient responses using an LLM with conversation history."""
     # Define the patient system prompt
     system_prompt = """
 You are role-playing as an elderly man in his 70s who is visiting a therapist (ELIZA).
@@ -45,13 +57,18 @@ When responding:
 4. Occasionally reference your family (grown children who are busy with their own lives)
 5. Keep responses relatively brief (2-3 sentences)
 6. Stay in character and respond to ELIZA's questions thoughtfully
+7. Maintain consistency with your previous statements in the conversation history
+8. Occasionally refer back to topics or concerns you mentioned earlier
 
 Remember: You are the patient speaking TO your therapist ELIZA. Respond to ELIZA's questions naturally.
 """
 
+    # Add conversation history to the context
+    context = format_conversation_history(conversation_history)
+    
     # Build the message sequence
     messages = [
-        {"role": "system", "content": system_prompt},
+        {"role": "system", "content": system_prompt + context},
         {"role": "assistant", "content": "I understand I am an elderly patient speaking with my therapist ELIZA."},
         {"role": "user", "content": eliza_message}
     ]
@@ -131,6 +148,9 @@ def main():
     print(Back.BLACK + Fore.WHITE + Style.BRIGHT, end="")
     print_header()
     
+    # Initialize conversation history
+    conversation_history: Deque[Tuple[str, str]] = deque(maxlen=6)
+    
     # Initial conversation
     eliza_message = "Is something troubling you?"
     print(f"{Fore.WHITE}ELIZA: {eliza_message}")
@@ -139,11 +159,16 @@ def main():
         try:
             # Get AI patient response
             print(f"{Fore.WHITE}YOU  :", end=" ")
-            user_response = get_user_text(eliza_message)
+            user_response = get_user_text(eliza_message, conversation_history)
+            
+            # Update conversation history with both messages
+            conversation_history.append(("ELIZA", eliza_message))
+            conversation_history.append(("PATIENT", user_response))
             
             # Get ELIZA response
             print(f"{Fore.WHITE}ELIZA:", end=" ")
             eliza_message = get_eliza_text(user_response)
+            
         except KeyboardInterrupt:
             print("\nGoodbye!")
             break
